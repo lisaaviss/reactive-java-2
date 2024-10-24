@@ -27,7 +27,13 @@ public class Commit {
         this.message = message;
     }
 
-    public LocalDateTime getCreationTime() {
+    public LocalDateTime getCreationTime(long delay) {
+        try {
+            // Используем глобальную задержку
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Восстановление статуса прерывания
+        }
         return creationTime;
     }
 

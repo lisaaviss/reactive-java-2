@@ -7,7 +7,7 @@ import java.util.Random;
 
 public class AggregatedDataCalculator {
 
-    private static final int NUM_EXPERIMENTS = 15;
+    private static final int NUM_EXPERIMENTS =  1;
     private static final Random random = new Random();
 
     public static StringBuilder calculateAggregatedData() {
@@ -74,8 +74,8 @@ public class AggregatedDataCalculator {
         while (iter.hasNext()) {
             Commit commit = iter.next();
             if (commit.getAuthor().equals(author)
-                    && commit.getCreationTime().isAfter(LocalDateTime.parse("2023-01-01T01:00:00"))
-                    && commit.getCreationTime().isBefore(LocalDateTime.parse("2024-01-01T01:00:00"))
+                    && commit.getCreationTime(1).isAfter(LocalDateTime.parse("2023-01-01T01:00:00"))
+                    && commit.getCreationTime(1).isBefore(LocalDateTime.parse("2024-01-01T01:00:00"))
                     && (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING)
                     && commit.getChangedFiles().size() > 2
                     && commit.getAuthor().email().contains("@")) {
@@ -92,8 +92,8 @@ public class AggregatedDataCalculator {
         Commit.Author author = commitList.get(0).getAuthor();
         long countedCommits = commitList.stream()
                 .filter(commit -> commit.getAuthor().equals(author))
-                .filter(commit -> commit.getCreationTime().isAfter(LocalDateTime.parse("2023-01-01T01:00:00")))
-                .filter(commit -> commit.getCreationTime().isBefore(LocalDateTime.parse("2024-01-01T01:00:00")))
+                .filter(commit -> commit.getCreationTime(0).isAfter(LocalDateTime.parse("2023-01-01T01:00:00")))
+                .filter(commit -> commit.getCreationTime(0).isBefore(LocalDateTime.parse("2024-01-01T01:00:00")))
                 .filter(commit -> (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING))
                 .filter(commit -> commit.getChangedFiles().size() > 2)
                 .filter(commit -> commit.getAuthor().email().contains("@"))
