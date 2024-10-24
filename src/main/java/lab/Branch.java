@@ -1,3 +1,5 @@
+package lab;
+
 public class Branch {
     private String name;
     private boolean isProtected;

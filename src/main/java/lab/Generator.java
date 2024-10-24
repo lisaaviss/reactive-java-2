@@ -1,3 +1,5 @@
+package lab;
+
 import net.datafaker.Faker;
 
 import java.time.Instant;

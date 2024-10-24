@@ -1,5 +1,9 @@
+package lab;
+
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -15,16 +19,18 @@ public class CustomCommitCounter implements Collector<Commit, CustomCommitCounte
 
     @Override
     public BiConsumer<CommitCountAccumulator, Commit> accumulator() {
+        List<Commit> threadSafeList = new CopyOnWriteArrayList<>();
         return (accumulator, commit) -> {
             if (
                     commit.getBranch().isProtected()
-                    & commit.getCreationTime(0).isAfter(LocalDateTime.parse("2023-01-01T01:00:00"))
-                    & commit.getCreationTime(0).isBefore(LocalDateTime.parse("2024-01-01T01:00:00"))
+                    & commit.getCreationTime().isAfter(LocalDateTime.parse("2023-01-01T01:00:00"))
+                    & commit.getCreationTime().isBefore(LocalDateTime.parse("2024-01-01T01:00:00"))
                     & (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING)
-                    & commit.getChangedFiles().size() > 2
+                    & commit.getChangedFiles(0).size() > 2
                     & commit.getAuthor().email().contains("@")
             ) {
                 accumulator.incrementCount();
+                threadSafeList.add(commit);
             }
         };
     }

@@ -1,3 +1,5 @@
+package lab;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,13 +29,8 @@ public class Commit {
         this.message = message;
     }
 
-    public LocalDateTime getCreationTime(long delay) {
-        try {
-            // Используем глобальную задержку
-            Thread.sleep(delay);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // Восстановление статуса прерывания
-        }
+    public LocalDateTime getCreationTime() {
+
         return creationTime;
     }
 
@@ -50,6 +47,7 @@ public class Commit {
     }
 
     public Author getAuthor() {
+
         return author;
     }
 
@@ -57,7 +55,12 @@ public class Commit {
         this.author = author;
     }
 
-    public List<String> getChangedFiles() {
+    public List<String> getChangedFiles(long delay) {
+        try {
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         return changedFiles;
     }
 

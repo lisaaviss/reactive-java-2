@@ -1,9 +1,12 @@
+package lab;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AggregatedDataCalculator {
 
@@ -34,9 +37,9 @@ public class AggregatedDataCalculator {
             iterationTotalTime50000 += calculateWithIteration(commitList50000);
             iterationTotalTime250000 += calculateWithIteration(commitList250000);
 
-            streamAPITotalTime5000 += calculateWithStreamAPI(commitList5000);
-            streamAPITotalTime50000 += calculateWithStreamAPI(commitList50000);
-            streamAPITotalTime250000 += calculateWithStreamAPI(commitList250000);
+            streamAPITotalTime5000 += calculateWithStreamAPI(commitList5000, 0);
+            streamAPITotalTime50000 += calculateWithStreamAPI(commitList50000, 0);
+            streamAPITotalTime250000 += calculateWithStreamAPI(commitList250000, 0);
 
             customCollectorTotalTime5000 += calculateWithCustomCollector(commitList5000);
             customCollectorTotalTime50000 += calculateWithCustomCollector(commitList50000);
@@ -67,6 +70,7 @@ public class AggregatedDataCalculator {
     }
 
     public static Long calculateWithIteration(List<Commit> commitList) {
+        List<Commit> threadSafeList = new CopyOnWriteArrayList<>();
         Instant start = Instant.now();
         long countedCommits = 0;
         Iterator<Commit> iter = commitList.listIterator();
@@ -74,11 +78,12 @@ public class AggregatedDataCalculator {
         while (iter.hasNext()) {
             Commit commit = iter.next();
             if (commit.getAuthor().equals(author)
-                    && commit.getCreationTime(1).isAfter(LocalDateTime.parse("2023-01-01T01:00:00"))
-                    && commit.getCreationTime(1).isBefore(LocalDateTime.parse("2024-01-01T01:00:00"))
+                    && commit.getCreationTime().isAfter(LocalDateTime.parse("2023-01-01T01:00:00"))
+                    && commit.getCreationTime().isBefore(LocalDateTime.parse("2024-01-01T01:00:00"))
                     && (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING)
-                    && commit.getChangedFiles().size() > 2
+                    && commit.getChangedFiles(0).size() > 2
                     && commit.getAuthor().email().contains("@")) {
+                threadSafeList.add(commit);
                 countedCommits++;
             }
         }
@@ -87,18 +92,38 @@ public class AggregatedDataCalculator {
         return Duration.between(start, end).toMillis();
     }
 
-    public static Long calculateWithStreamAPI(List<Commit> commitList) {
+    public static Long calculateWithStreamAPI(List<Commit> commitList, long delay) {
+        List<Commit> threadSafeList = new CopyOnWriteArrayList<>();
         Instant start = Instant.now();
         Commit.Author author = commitList.get(0).getAuthor();
-        long countedCommits = commitList.stream()
+        commitList.parallelStream() //параллельный стрим
                 .filter(commit -> commit.getAuthor().equals(author))
-                .filter(commit -> commit.getCreationTime(0).isAfter(LocalDateTime.parse("2023-01-01T01:00:00")))
-                .filter(commit -> commit.getCreationTime(0).isBefore(LocalDateTime.parse("2024-01-01T01:00:00")))
+                .filter(commit -> commit.getCreationTime().isAfter(LocalDateTime.parse("2023-01-01T01:00:00")))
+                .filter(commit -> commit.getCreationTime().isBefore(LocalDateTime.parse("2024-01-01T01:00:00")))
                 .filter(commit -> (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING))
-                .filter(commit -> commit.getChangedFiles().size() > 2)
+                .filter(commit -> commit.getChangedFiles(delay).size() > 2)
                 .filter(commit -> commit.getAuthor().email().contains("@"))
-                .count();
-        //System.out.println(countedCommits);
+                .forEach(threadSafeList::add);
+        //System.out.println(threadSafeList.size());
+
+        Instant end = Instant.now();
+        return Duration.between(start, end).toMillis();
+
+    }
+
+    public static Long calculateWithStreamAPIconsistent(List<Commit> commitList, long delay) {
+        List<Commit> threadSafeList = new CopyOnWriteArrayList<>();
+        Instant start = Instant.now();
+        Commit.Author author = commitList.get(0).getAuthor();
+        commitList.stream() //параллельный стрим
+                .filter(commit -> commit.getAuthor().equals(author))
+                .filter(commit -> commit.getCreationTime().isAfter(LocalDateTime.parse("2023-01-01T01:00:00")))
+                .filter(commit -> commit.getCreationTime().isBefore(LocalDateTime.parse("2024-01-01T01:00:00")))
+                .filter(commit -> (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING))
+                .filter(commit -> commit.getChangedFiles(delay).size() > 2)
+                .filter(commit -> commit.getAuthor().email().contains("@"))
+                .forEach(threadSafeList::add);
+        //System.out.println(threadSafeList.size());
 
         Instant end = Instant.now();
         return Duration.between(start, end).toMillis();
@@ -109,10 +134,10 @@ public class AggregatedDataCalculator {
         Instant start = Instant.now();
 
         Commit.Author author = commitList.get(0).getAuthor();
-        long countedCommits = commitList.stream()
+        long countedCommits = commitList.parallelStream()
                 .filter(commit -> commit.getAuthor().equals(author))
                 .collect(new CustomCommitCounter());
-        //System.out.println(countedCommits);
+        System.out.println(countedCommits);
 
         Instant end = Instant.now();
         return Duration.between(start, end).toMillis();
