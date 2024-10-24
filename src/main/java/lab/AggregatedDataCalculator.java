@@ -129,7 +129,30 @@ public class AggregatedDataCalculator {
         return Duration.between(start, end).toMillis();
 
     }
+    public static Long calculateWithCustomSpliterator(List<Commit> commitList, long delay) {
+        Instant start = Instant.now();
+        Commit.Author author = commitList.get(0).getAuthor();
+        List<Commit> threadSafeList = new CopyOnWriteArrayList<>();
 
+        CommitSpliterator spliterator = new CommitSpliterator(commitList);
+        spliterator.forEachRemaining(commit -> {
+            if (filterCommit(commit, author, delay)) {
+                threadSafeList.add(commit);
+            }
+        });
+
+        Instant end = Instant.now();
+        return Duration.between(start, end).toMillis();
+    }
+
+    private static boolean filterCommit(Commit commit, Commit.Author author, long delay) {
+        return commit.getAuthor().equals(author) &&
+                commit.getCreationTime().isAfter(LocalDateTime.parse("2023-01-01T01:00:00")) &&
+                commit.getCreationTime().isBefore(LocalDateTime.parse("2024-01-01T01:00:00")) &&
+                (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING) &&
+                commit.getChangedFiles(delay).size() > 2 &&
+                commit.getAuthor().email().contains("@");
+    }
     public static Long calculateWithCustomCollector(List<Commit> commitList) {
         Instant start = Instant.now();
 

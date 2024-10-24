@@ -79,6 +79,19 @@ public class AggregatedDataCalculatorBenchmark {
     }
 
 
+    @Benchmark
+    public long benchmarkСalculateWithCustomSpliterator5000() {
+        return AggregatedDataCalculator.calculateWithCustomSpliterator(commitList5000, 1);
+    }
+    @Benchmark
+    public long benchmarkСalculateWithCustomSpliterator50000() {
+        return AggregatedDataCalculator.calculateWithCustomSpliterator(commitList50000, 1);
+    }
+    @Benchmark
+    public long benchmarkСalculateWithCustomSpliterator250000() {
+        return AggregatedDataCalculator.calculateWithCustomSpliterator(commitList250000, 1);
+    }
+
 }
 
 
