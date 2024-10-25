@@ -3,10 +3,12 @@ package lab;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ForkJoinPool;
 
 public class AggregatedDataCalculator {
 
@@ -129,7 +131,34 @@ public class AggregatedDataCalculator {
         return Duration.between(start, end).toMillis();
 
     }
-    public static Long calculateWithCustomSpliterator(List<Commit> commitList, long delay) {
+
+    public static Long calculateWithForkJoin(List<Commit> commitList, long delay) {
+        Instant start = Instant.now();
+
+        // Инициализируем ForkJoinPool и запускаем задачу
+        ForkJoinPool pool = ForkJoinPool.commonPool();
+        Commit.Author author = commitList.get(0).getAuthor();
+        CommitFilterTask task = new CommitFilterTask(commitList, author, delay);
+        List<Commit> result = pool.invoke(task);
+
+        Instant end = Instant.now();
+        return Duration.between(start, end).toMillis();
+    }
+    public static Long calculateWithCustomCollector(List<Commit> commitList) {
+        Instant start = Instant.now();
+
+        Commit.Author author = commitList.get(0).getAuthor();
+        long countedCommits = commitList.parallelStream()
+                .filter(commit -> commit.getAuthor().equals(author))
+                .collect(new CustomCommitCounter());
+        System.out.println(countedCommits);
+
+        Instant end = Instant.now();
+        return Duration.between(start, end).toMillis();
+
+    }
+
+    /*public static Long calculateWithCustomSpliterator(List<Commit> commitList, long delay) {
         Instant start = Instant.now();
         Commit.Author author = commitList.get(0).getAuthor();
         List<Commit> threadSafeList = new CopyOnWriteArrayList<>();
@@ -152,18 +181,5 @@ public class AggregatedDataCalculator {
                 (commit.getStatus() == CommitStatus.COMPLETED || commit.getStatus() == CommitStatus.PENDING) &&
                 commit.getChangedFiles(delay).size() > 2 &&
                 commit.getAuthor().email().contains("@");
-    }
-    public static Long calculateWithCustomCollector(List<Commit> commitList) {
-        Instant start = Instant.now();
-
-        Commit.Author author = commitList.get(0).getAuthor();
-        long countedCommits = commitList.parallelStream()
-                .filter(commit -> commit.getAuthor().equals(author))
-                .collect(new CustomCommitCounter());
-        System.out.println(countedCommits);
-
-        Instant end = Instant.now();
-        return Duration.between(start, end).toMillis();
-
-    }
+    }*/
 }
